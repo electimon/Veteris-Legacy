@@ -1,6 +1,9 @@
 #import "VAPIHelper.h"
 #import "../Delegate/Veteris-LegacyApplication.h"
 #import "../TouchXML/CXMLDocument.h"
+#import "../TouchJSON/JSON/CJSONSerializer.h"
+#import "../TouchJSON/JSON/CJSONDeserializer.h"
+#import "../TouchJSON/JSON/CJSONScanner.h"
 #import "Application/Application.h"
 #import "FeaturedViewController/FeaturedViewController.h"
 
@@ -26,7 +29,7 @@
     } else {
         [request setValue:appdelegate.VAPIDeviceString forHTTPHeaderField:@"X-Veteris-Device"];
         [request setValue:appVersion forHTTPHeaderField:@"X-Veteris-Version"];
-        [request setValue:@"xml" forHTTPHeaderField:@"type"];
+        [request setValue:@"json" forHTTPHeaderField:@"type"];
     }
     NSURLResponse *response;
     NSError *error;
@@ -37,8 +40,32 @@
     return [data retain];
 }
 
-+ (NSData *)getVAPIDataForEndpoint:(NSString*)endpoint {
++ (NSData *)getVAPIDataForEndpoint:(NSString*)endpoint useXML:(BOOL)useXML {
+    if (useXML) {
+        return [self getVAPIDataForEndpoint:endpoint withHeaders:@{@"type": @"xml"}];
+    }
     return [self getVAPIDataForEndpoint:endpoint withHeaders:nil];
+}
+
++ (NSArray *)parseAppsJSONData:(NSData *)data {
+    NSError *error = NULL;
+    NSDictionary *jsonDict = [[CJSONDeserializer deserializer] deserialize:data error:&error];
+    if (error) {
+        DebugLog([NSString stringWithFormat:@"Error parsing JSON: %@", error]);
+        [error release];
+        return nil;
+    }
+    NSMutableArray *appsArray = [[NSMutableArray alloc] init];
+    DebugLog([NSString stringWithFormat:@"JSON: %@", jsonDict]);
+    for (NSDictionary *appDict in [jsonDict objectForKey:@"applications"]) {
+        Application *app = [[Application alloc] initFromDictionary:appDict];
+        DebugLog([NSString stringWithFormat:@"App: %@", app])
+        if (app) {
+            [appsArray addObject:[app retain]];
+        }
+        [app release];
+    }
+    return appsArray;
 }
 
 + (NSArray *)parseAppXMLElemenet:(CXMLElement*)element {
@@ -76,8 +103,8 @@
         if ([child.localName isEqualToString:@"ipadApp"]) {
           [appDict setObject:[child stringValue] forKey:@"ipadApp"];
         }
-        if ([child.localName isEqualToString:@"itemId"]) {
-          [appDict setObject:[child stringValue] forKey:@"itemId"];
+        if ([child.localName isEqualToString:@"itemID"]) {
+          [appDict setObject:[child stringValue] forKey:@"itemID"];
         }
       }
       Application *app = [[Application alloc] initFromDictionary:appDict];
@@ -86,23 +113,28 @@
       }
       [appDict release];
       [app release];
-      //NSLog(@"%@", [[[[node children] objectAtIndex:0] childAtIndex:0] stringValue]);
     }
     return appsArray;
 }
 
-+ (void)getFeaturedData:(FeaturedViewController *)viewController {
-    DebugLog(@"called!");
++ (void)getFeaturedData:(FeaturedViewController *)viewController useXML:(BOOL)useXML {
+    DebugLog([NSString stringWithFormat:@"Getting featured data with XML: %i", useXML]);
+    NSArray *appsArray;
     VeterisLegacyApplication *appdelegate = [[UIApplication sharedApplication] delegate];
     NSString *appVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"];
-    NSData *data = [self getVAPIDataForEndpoint:@"/listing/recommended"];
-    CXMLDocument *doc = [[CXMLDocument alloc] initWithData:data options:0 error:nil];
-    CXMLElement *rootNode = [doc rootElement];
-    CXMLElement *applicationsElement = [[rootNode children] objectAtIndex:0];
-    NSArray *appsArray = [self parseAppXMLElemenet:applicationsElement];
-    [doc release];
+    NSData *data = [self getVAPIDataForEndpoint:@"/listing/recommended" useXML:useXML];
+    if (useXML) {
+      CXMLDocument *doc = [[CXMLDocument alloc] initWithData:data options:0 error:nil];
+      CXMLElement *rootNode = [doc rootElement];
+      CXMLElement *applicationsElement = [[rootNode children] objectAtIndex:0];
+      appsArray = [self parseAppXMLElemenet:applicationsElement];
+      [doc release];
+    } else {
+      appsArray = [self parseAppsJSONData:data];
+    }
     [data release];
-    viewController.featuredApps = appsArray;
+    DebugLog([NSString stringWithFormat:@"Object: %@ %@", [appsArray class], appsArray]);
+    viewController.featuredApps = [appsArray retain];
     [viewController performSelector:@selector(featuredDataLoaded)];
 }
 

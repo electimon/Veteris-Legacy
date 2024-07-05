@@ -15,7 +15,7 @@
         [dictionary objectForKey:@"category"] != nil &&
         [dictionary objectForKey:@"requiredOS"] != nil &&
         [dictionary objectForKey:@"ipadApp"] != nil &&
-        [dictionary objectForKey:@"itemId"] != nil
+        [dictionary objectForKey:@"itemID"] != nil
     ) {
         self.name = [dictionary objectForKey:@"name"];  
         self.developer = [dictionary objectForKey:@"developer"];
@@ -27,9 +27,10 @@
         self.category = [dictionary objectForKey:@"category"];
         self.requiredOS = [dictionary objectForKey:@"requiredOS"];
         self.ipadApp = [[dictionary objectForKey:@"ipadApp"] boolValue];
-        self.itemId = [[dictionary objectForKey:@"itemId"] integerValue];
+        self.itemID = [[dictionary objectForKey:@"itemID"] integerValue];
         return self;
     }
+    DebugLog(@"Failed to initialize Application object from dictionary");
     return nil;
 }
 

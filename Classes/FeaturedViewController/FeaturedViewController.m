@@ -24,7 +24,6 @@
 
   // Table View
   CGRect tableViewFrame = CGRectMake(self.navigationController.view.bounds.origin.x, self.navigationController.view.bounds.origin.y, self.navigationController.view.bounds.size.width, self.view.frame.size.height-(self.tabBarController.tabBar.frame.size.height+self.navigationController.navigationBar.frame.size.height));
-  DebugLog(@"%f", self.navigationController.view.frame.size.height-self.tabBarController.tabBar.frame.size.height);
   tableView = [[UITableView alloc] initWithFrame:tableViewFrame];
   tableView.delegate = self;
   tableView.dataSource = self;
@@ -37,6 +36,7 @@
 
 -(NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section{
   DebugLog(@"called");
+  DebugLog([NSString stringWithFormat:@"%i", [featuredApps count]]);
   if (featuredApps.count != 0) {
     [indicator stopAnimating];
     self.tableView.separatorStyle = UITableViewCellSeparatorStyleSingleLine;
@@ -83,7 +83,7 @@
 
 // Start getting featured data
 - (void)loadFeaturedData {
-  [VAPIHelper getFeaturedData:self];
+  [VAPIHelper getFeaturedData:self useXML:NO];
 }
 
 - (void)loadCellImage:(NSIndexPath *)indexPath {

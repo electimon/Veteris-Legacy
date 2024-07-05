@@ -16,7 +16,7 @@
   debugOn = YES;
   generalQueue = [[NSOperationQueue alloc] init];
   VAPIDeviceString = [VAPIHelper getVAPIDeviceString];
-  apiRootURL = [[NSURL URLWithString:@"http://192.168.0.135:5000"] retain];
+  apiRootURL = [[NSURL URLWithString:@"http://veteris.yzu.moe"] retain];
   apiBaseURL = [[NSURL URLWithString:[NSString stringWithFormat:@"%@/1.1", apiRootURL.absoluteString]] retain];
   DebugLog([NSString stringWithFormat:@"%@", apiBaseURL.absoluteString])
   // UI

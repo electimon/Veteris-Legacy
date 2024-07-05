@@ -1,9 +1,12 @@
-clang
+%clang
 --target=arm-apple-darwin9
 -miphoneos-version-min=3.0
--I/home/electimon/Projects/toolchain/saucy/root/theos/sdks/iPhoneOS3.0.sdk/usr/include
--I/home/electimon/Projects/toolchain/saucy/root/Projects/Veteris-Legacy
+-I/home/electimon/sdk3/usr/include
+-include/home/electimon/Projects/Veteris-Legacy/Veteris-Legacy.pch
+-arch armv6
+-I.
 -fobjc-nonfragile-abi
--include/home/electimon/Projects/toolchain/saucy/root/Projects/Veteris-Legacy/Veteris-Legacy.pch
+-fblocks
+-isysroot/home/electimon/sdk3
 %objective-c
-%h -x
+%h 

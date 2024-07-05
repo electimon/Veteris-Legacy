@@ -5,5 +5,5 @@
 + (NSData *)getVAPIDataForEndpoint:(NSString*)endpoint withHeaders:(NSDictionary *)headers;
 + (NSData *)getVAPIDataForEndpoint:(NSString*)endpoint;
 + (NSString *)getVAPIDeviceString;
-+ (void)getFeaturedData:(FeaturedViewController *)viewController;
++ (void)getFeaturedData:(FeaturedViewController *)viewController useXML:(BOOL)useXML;
 @end

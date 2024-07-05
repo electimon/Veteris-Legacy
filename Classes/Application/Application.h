@@ -10,7 +10,7 @@
 @property (nonatomic, strong) NSString *category;
 @property (nonatomic, strong) NSString *requiredOS;
 @property (nonatomic) BOOL ipadApp;
-@property (nonatomic) int itemId;
+@property (nonatomic) int itemID;
 
 -(Application *)initFromDictionary:(NSDictionary *)dictionary;
 +(UIImage *)getAppImage:(Application *)app forTableView:(UITableView *)tableView;

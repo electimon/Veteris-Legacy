@@ -1,4 +1,4 @@
-IPHONE_IP:=192.168.0.136
+IPHONE_IP:=192.168.1.168
 PROJECTNAME:=Veteris-Legacy
 APPFOLDER:=$(PROJECTNAME).app
 INSTALLFOLDER:=$(PROJECTNAME).app
@@ -11,10 +11,10 @@ CFLAGS += -arch armv6
 CFLAGS += -g
 CFLAGS += -I"$(SRCDIR)"
 
-CPPFLAGS += -include "Veteris-Legacy.pch"
+#CPPFLAGS += -include "Veteris-Legacy.pch"
 CPPFLAGS += -arch armv6
 CPPFLAGS += -g
-CPPLAGS += -I"$(SRCDIR)"
+CPPFLAGS += -I"$(SRCDIR)"
 
 LDFLAGS += -framework Foundation 
 LDFLAGS += -framework UIKit 
@@ -102,22 +102,25 @@ install: dist
 ifeq ($(IPHONE_IP),)
 	echo "Please set IPHONE_IP"
 else
-	sshpass -p alpine ssh root@$(IPHONE_IP) 'rm -fr /Applications/$(INSTALLFOLDER)'
-	sshpass -p alpine scp -r $(APPFOLDER) root@$(IPHONE_IP):/Applications/$(INSTALLFOLDER)
+	sshpass -p alpine ssh -oHostKeyAlgorithms=ssh-rsa root@$(IPHONE_IP) 'rm -fr /Applications/$(INSTALLFOLDER)'
+	sshpass -p alpine scp -oHostKeyAlgorithms=ssh-rsa -r $(APPFOLDER) root@$(IPHONE_IP):/Applications/$(INSTALLFOLDER)
 	echo "Application $(INSTALLFOLDER) installed"
-	sshpass -p alpine ssh mobile@$(IPHONE_IP) 'killall -9 Veteris-Legacy'
+	sshpass -p alpine ssh -oHostKeyAlgorithms=ssh-rsa mobile@$(IPHONE_IP) 'killall -9 Veteris-Legacy'
 endif
 
 uninstall:
 ifeq ($(IPHONE_IP),)
 	echo "Please set IPHONE_IP"
 else
-	ssh root@$(IPHONE_IP) 'rm -fr /Applications/$(INSTALLFOLDER)'
+	ssh -oHostKeyAlgorithms=ssh-rsa root@$(IPHONE_IP) 'rm -fr /Applications/$(INSTALLFOLDER)'
 	echo "Application $(INSTALLFOLDER) uninstalled"
 endif
 clean:
 	find . -name \*.o|xargs rm -rf
 	rm -rf $(APPFOLDER)
 	rm -f $(PROJECTNAME)
+
+dump:
+	echo $(CFLAGS)
 
 .PHONY: all dist install uninstall clean
