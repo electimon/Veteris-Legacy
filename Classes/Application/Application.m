@@ -34,6 +34,10 @@
     return nil;
 }
 
+- (NSString *)description {
+    return [NSString stringWithFormat:@"Application: %@ by %@, version %@, bundle ID: %@, file name: %@, icon URL: %@, category: %@, required OS: %@, iPad app: %i, item ID: %i", self.name, self.developer, self.version, self.bundleid, self.fileName, self.iconurl, self.category, self.requiredOS, self.ipadApp, self.itemID];
+}
+
 - (void)dealloc {
     [self.name release];
     [self.developer release];
@@ -64,5 +68,9 @@
         [delegate.imageCache setObject:image forKey:iconPath];
     }
     return image;
+}
+
++(UIImage *)getAppImage:(Application *)app {
+    return [self getAppImage:app forTableView:nil];
 }
 @end

@@ -7,12 +7,18 @@
 #import "Application/Application.h"
 #import "FeaturedViewController/FeaturedViewController.h"
 
+#import <dlfcn.h>
+
+#define TEMP_IPA_PATH "/var/mobile/Media/Downloads/temp.ipa"
+
 @implementation VAPIHelper {
 }
 
+// TODO:
+// * Cache CFBundleShortVersionString
+
 + (NSData *)getVAPIDataForEndpoint:(NSString*)endpoint withHeaders:(NSDictionary *)headers {
     VeterisLegacyApplication *appdelegate = [[UIApplication sharedApplication] delegate];
-    NSString *appVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"];
     NSURL *currentAPIURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@%@", appdelegate.apiBaseURL, endpoint]];
     NSMutableURLRequest *request = [[NSMutableURLRequest alloc] init];
     NSMutableDictionary *requiredHeaders = [[NSMutableDictionary alloc] init];
@@ -22,22 +28,55 @@
     if (headers) {
         requiredHeaders = [@{
             @"X-Veteris-Device": appdelegate.VAPIDeviceString,
-            @"X-Veteris-Version": appVersion
+            @"X-Veteris-Version": appdelegate.appVersion
         } mutableCopy];
         [requiredHeaders addEntriesFromDictionary:headers];
         request.allHTTPHeaderFields = requiredHeaders;
     } else {
         [request setValue:appdelegate.VAPIDeviceString forHTTPHeaderField:@"X-Veteris-Device"];
-        [request setValue:appVersion forHTTPHeaderField:@"X-Veteris-Version"];
+        [request setValue:appdelegate.appVersion forHTTPHeaderField:@"X-Veteris-Version"];
         [request setValue:@"json" forHTTPHeaderField:@"type"];
     }
     NSURLResponse *response;
     NSError *error;
     NSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
-    //[appVersion release];
     [request release];
     [requiredHeaders release];
     return [data retain];
+}
+
++ (NSData *)getIPAForApp:(Application *)app {
+    VeterisLegacyApplication *appdelegate = [[UIApplication sharedApplication] delegate];
+    NSString *ipaURL = [NSString stringWithFormat:@"%@/%@", appdelegate.apiRootURL, app.fileName];
+    DebugLog([NSString stringWithFormat:@"Getting IPA at path: %@", ipaURL])
+    NSURL *currentIPAURL = [NSURL URLWithString:[ipaURL stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
+    NSMutableURLRequest *request = [[NSMutableURLRequest alloc] init];
+    [request setURL:currentIPAURL];
+    [request setHTTPMethod:@"GET"];
+    // [request setValue:appdelegate.VAPIDeviceString forHTTPHeaderField:@"X-Veteris-Device"];
+    // [request setValue:appdelegate.appVersion forHTTPHeaderField:@"X-Veteris-Version"];
+    NSURLResponse *response;
+    NSError *error = NULL;
+    DebugLog(@"Fetching");
+    NSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
+    if (error) {
+        DebugLog([NSString stringWithFormat:@"Error fetching IPA: %@", error]);
+        [error release];
+        [request release];
+        return nil;
+    }
+    [request release];
+    return [data retain];
+}
+
++ (BOOL)installApp:(Application *)app {
+    DebugLog([NSString stringWithFormat:@"Installing app: %@", app.name]);
+    NSData *data = [self getIPAForApp:app];
+    if (data != nil) {
+        DebugLog([NSString stringWithFormat:@"Got IPA data: %i bytes", [data length]]);
+        return [self InstallIPA:data];
+    }
+    return false;
 }
 
 + (NSData *)getVAPIDataForEndpoint:(NSString*)endpoint useXML:(BOOL)useXML {
@@ -56,7 +95,6 @@
         return nil;
     }
     NSMutableArray *appsArray = [[NSMutableArray alloc] init];
-    DebugLog([NSString stringWithFormat:@"JSON: %@", jsonDict]);
     for (NSDictionary *appDict in [jsonDict objectForKey:@"applications"]) {
         Application *app = [[Application alloc] initFromDictionary:appDict];
         DebugLog([NSString stringWithFormat:@"App: %@", app])
@@ -145,4 +183,53 @@
     DebugLog([NSString stringWithFormat:@"VAPIDeviceString = %@", VAPIDeviceString]);
     return VAPIDeviceString;
 }
+
++ (BOOL)InstallIPA:(NSData *)data MobileInstallionPath:(NSString *)frameworkPath {
+    [[UIApplication sharedApplication] setNetworkActivityIndicatorVisible:false];
+    void *lib = dlopen([frameworkPath UTF8String], RTLD_LAZY);
+    puts(dlerror());
+    DebugLog([NSString stringWithFormat:@"lib: %p", lib]);
+    if (lib) {
+        MobileInstallationInstall pMobileInstallationInstall = (MobileInstallationInstall)dlsym(lib, "MobileInstallationInstall");
+        if (pMobileInstallationInstall) {
+            NSString* temp = [NSTemporaryDirectory() stringByAppendingPathComponent:[@"Temp_" stringByAppendingString:[NSString stringWithFormat:@"%u", arc4random()]]];
+            NSError *error = NULL;
+            [data writeToFile:temp atomically:YES];
+            DebugLog([NSString stringWithFormat:@"Temp IPA path: %@", temp]);
+            if (error) {
+                DebugLog([NSString stringWithFormat:@"Error writing IPA: %@", error]);
+                [self removeTempIPA];
+                return false;
+            }
+            DebugLog([NSString stringWithFormat:@"Installing IPA: %i bytes", [data length]]);
+            int ret = pMobileInstallationInstall(temp, [NSDictionary dictionaryWithObject:@"User" forKey:@"ApplicationType"], &installCallback, NULL);
+            NSString *alertTitle = (ret == 0) ? @"Success!" : @"Failure";
+            NSString *alertMessage = (ret == 0) ? @"Application installed successfully!" : @"Application failed to install...";
+            [[UIApplication sharedApplication] setIdleTimerDisabled:false];
+            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:alertTitle message:alertMessage delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil];
+            [alert show];
+            return (ret == 0);
+        }
+    }
+    [self removeTempIPA];
+    return false;
+}
+
++ (BOOL)InstallIPA:(NSData *)data {
+    return [self InstallIPA:data MobileInstallionPath:@"/System/Library/PrivateFrameworks/MobileInstallation.framework/MobileInstallation"];
+}
+
++ (void)removeTempIPA {
+    NSError *error;
+    [[NSFileManager defaultManager] removeItemAtPath:@TEMP_IPA_PATH error:&error];
+}
+
+// Mystical install progress callback code, don't stare for too long or it'll stop working
+void installCallback(CFDictionaryRef information) {
+    NSDictionary *dict = (__bridge NSDictionary *)information;
+    float percentDone = [[dict valueForKey:@"PercentComplete"] floatValue] / 100;
+    NSString *status = [dict valueForKey:@"Status"];
+    DebugLog([NSString stringWithFormat:@"Install progress: %f%%, status: %@", percentDone, status]);
+}
+
 @end

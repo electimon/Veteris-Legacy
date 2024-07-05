@@ -10,12 +10,14 @@
 @synthesize VAPIDeviceString;
 @synthesize imageCache;
 @synthesize generalQueue;
+@synthesize appVersion;
 - (void)applicationDidFinishLaunching:(UIApplication *)application {
   // Variables
   imageCache = [[NSMutableDictionary alloc] init];
   debugOn = YES;
   generalQueue = [[NSOperationQueue alloc] init];
   VAPIDeviceString = [VAPIHelper getVAPIDeviceString];
+  appVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"];
   apiRootURL = [[NSURL URLWithString:@"http://veteris.yzu.moe"] retain];
   apiBaseURL = [[NSURL URLWithString:[NSString stringWithFormat:@"%@/1.1", apiRootURL.absoluteString]] retain];
   DebugLog([NSString stringWithFormat:@"%@", apiBaseURL.absoluteString])
@@ -43,6 +45,7 @@
 void _DebugLog(const char *file, int lineNumber, NSString *message,...) {
   NSString *string = [[NSString alloc] initWithUTF8String:file];
   NSLog(@"%@:%d: %@", string, lineNumber, message);
+  [string release];
 }
 
 // Analytical utilities

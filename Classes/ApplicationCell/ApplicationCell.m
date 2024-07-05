@@ -17,7 +17,7 @@
         appNameLabel = [[UILabel alloc] initWithFrame:CGRectMake(70, 22, 200, 21)];
         appNameLabel.numberOfLines = 1;
         appNameLabel.lineBreakMode = UILineBreakModeTailTruncation;
-        appNameLabel.text = @"Placeholder";
+        appNameLabel.text = @"Grrrr rawr :3";
 
         // App Version
         appVersionLabel = [[UILabel alloc] initWithFrame:CGRectMake(70, 48, 0, 0)];

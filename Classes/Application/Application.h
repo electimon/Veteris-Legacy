@@ -14,4 +14,5 @@
 
 -(Application *)initFromDictionary:(NSDictionary *)dictionary;
 +(UIImage *)getAppImage:(Application *)app forTableView:(UITableView *)tableView;
++(UIImage *)getAppImage:(Application *)app;
 @end

@@ -19,6 +19,7 @@
 @property (nonatomic, retain) NSMutableDictionary *imageCache;
 @property (nonatomic, retain) NSOperationQueue *generalQueue;
 @property (nonatomic) BOOL debugOn;
+@property (nonatomic, retain) NSString *appVersion;
 + (NSString *) getSysInfoByName:(char *)typeSpecifier;
 void _DebugLog(const char *file, int lineNumber, NSString *format,...);
 @end

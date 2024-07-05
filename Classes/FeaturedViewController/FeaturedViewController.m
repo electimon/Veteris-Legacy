@@ -4,6 +4,7 @@
 #import "../../TouchXML/CXMLDocument.h"
 #import "../../Delegate/Veteris-LegacyApplication.h"
 #import "Classes/ApplicationCell/ApplicationCell.h"
+#import "Classes/AppInfo/AppInfo.h"
 
 @implementation FeaturedViewController {
   VAPIHelper *_apiHelper;
@@ -73,6 +74,12 @@
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
   return 64;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+  Application *app = [featuredApps objectAtIndex:indexPath.row];
+  AppInfo *appInfo = [[AppInfo alloc] initWithApp:app];
+  [self.navigationController pushViewController:appInfo animated:YES];
 }
 
 // Callback for loaded featured data
